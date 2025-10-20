@@ -1,0 +1,19 @@
+.DS_Store
+.gas-snapshot
+
+# Compiler files
+cache/
+out/
+
+# Ignores development broadcast logs
+bin/
+broadcast/
+
+# Docs
+docs/
+
+# Dotenv file
+.env
+
+# Dependencies
+node_modules
