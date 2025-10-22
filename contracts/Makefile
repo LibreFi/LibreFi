@@ -3,12 +3,12 @@ include .env
 .PHONY: compile deploy deploy-verify test verify
 
 define forge_script
-	forge script ./script/Deploy.s.sol --broadcast --legacy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} $(1) -vvvv
+	forge script ./script/Deploy.s.sol --broadcast --legacy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --via-ir $(1) -vvvv
 endef
 
 # Define a target to build the project
 build:
-	forge build --build-info --build-info-path out/build-info/
+	forge build --build-info --build-info-path out/build-info/ --via-ir
 
 # Define a target to deploy using the specified network
 deploy: build
@@ -34,7 +34,7 @@ verify:
 
 # Define a target to compile the contracts
 compile:
-	forge compile
+	forge compile --via-ir
 
 # Define a target to run tests
 test:
