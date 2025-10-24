@@ -188,7 +188,7 @@ export default function PoolDetailsPage() {
             </div>
             <div>
               <p className='text-sm text-muted-foreground'>Pool Created</p>
-              <p className='font-medium'>Feb 27, 2025</p>
+              <p className='font-medium'>Oct 23, 2025</p>
             </div>
           </div>
         </div>
