@@ -57,6 +57,11 @@ module.exports = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        neon: {
+          primary: 'hsl(var(--neon-primary))',
+          secondary: 'hsl(var(--neon-secondary))',
+          accent: 'hsl(var(--neon-accent))',
+        },
       },
     },
   },

@@ -3,11 +3,19 @@
 import { FC } from 'react';
 import { ConnectButton as RainbowConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from '@/components/shared/Button';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import Image from 'next/image';
 
 export const ConnectButton: FC = () => {
   return (
-    <RainbowConnectButton.Custom>
+    <ErrorBoundary
+      fallback={
+        <Button size='lg' disabled>
+          Wallet Unavailable
+        </Button>
+      }
+    >
+      <RainbowConnectButton.Custom>
       {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
         const ready = mounted;
         const connected = ready && account && chain;
@@ -67,7 +75,8 @@ export const ConnectButton: FC = () => {
           </div>
         );
       }}
-    </RainbowConnectButton.Custom>
+      </RainbowConnectButton.Custom>
+    </ErrorBoundary>
   );
 };
 

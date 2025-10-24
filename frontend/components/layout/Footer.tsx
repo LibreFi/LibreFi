@@ -8,7 +8,7 @@ export function Footer() {
           <p className='text-sm text-muted-foreground'>© {new Date().getFullYear()} LibreFi. All rights reserved.</p>
           <div className='flex items-center gap-6'>
             <Link
-              href='https://twitter.com/levera_finance'
+              href='https://twitter.com/librefi_app'
               className='text-muted-foreground hover:text-foreground transition-colors'
               target='_blank'
               rel='noopener noreferrer'
@@ -16,7 +16,7 @@ export function Footer() {
               Twitter
             </Link>
             <Link
-              href='https://discord.gg/levera'
+              href='https://discord.gg/librefi'
               className='text-muted-foreground hover:text-foreground transition-colors'
               target='_blank'
               rel='noopener noreferrer'
@@ -24,7 +24,7 @@ export function Footer() {
               Discord
             </Link>
             <Link
-              href='https://docs.levera.finance'
+              href='https://docs.librefi.app'
               className='text-muted-foreground hover:text-foreground transition-colors'
               target='_blank'
               rel='noopener noreferrer'

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Address, parseUnits, formatUnits, zeroAddress, maxUint256 } from 'viem';
 import { useAccount } from 'wagmi';
@@ -28,7 +28,7 @@ export default function MarginTradePage() {
   const [leverage, setLeverage] = useState(1.5);
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
   const [needsApproval, setNeedsApproval] = useState(true);
-  const [approvalStep, setApprovalStep] = useState<'none' | 'wallet' | 'factory'>('none');
+  const [currentStep, setCurrentStep] = useState<'ready' | 'approving' | 'creating' | 'success'>('ready');
 
   // Get pool data
   const { poolAddresses, pools } = useLendingPoolFactory();
@@ -82,25 +82,29 @@ export default function MarginTradePage() {
   useEffect(() => {
     if (receipt?.status === 'success') {
       toast.dismiss('tx-confirm');
-
-      if (needsApproval) {
-        // Handle wallet approval completion
-        if (approvalStep === 'wallet') {
-          toast.success('Token approved successfully!');
-          refetchWalletAllowance().then(() => {
-            // After wallet approval, check if factory approval is needed
-            setNeedsApproval(false);
-            setApprovalStep('none');
-            setTxHash(undefined);
-          });
-        }
-      } else {
+      
+      if (currentStep === 'approving') {
+        // Approval completed, now check if we can proceed to create position
+        toast.success('Token approved successfully!');
+        refetchWalletAllowance().then(() => {
+          setNeedsApproval(false);
+          setCurrentStep('ready');
+          setTxHash(undefined);
+          // Automatically proceed to create position after short delay
+          setTimeout(() => {
+            handleCreatePosition();
+          }, 1000);
+        });
+      } else if (currentStep === 'creating') {
         // Position created successfully
         toast.success('Position created successfully!');
-        router.push(`/margin/${poolAddress}`);
+        setCurrentStep('success');
+        setTimeout(() => {
+          router.push(`/margin/${poolAddress}`);
+        }, 1500);
       }
     }
-  }, [receipt, router, poolAddress, needsApproval, approvalStep, refetchWalletAllowance]);
+  }, [receipt, router, poolAddress, currentStep, refetchWalletAllowance]);
 
   // Calculate position details based on contract logic
   const calculatePositionDetails = (pool?: PoolDetails) => {
@@ -180,11 +184,12 @@ export default function MarginTradePage() {
   };
 
   // Approve collateral tokens
-  const handleApproveWallet = async () => {
+  const handleApproveToken = async () => {
     if (!pool || !userAddress) return;
 
     try {
-      toast.loading('Approving wallet...', { id: 'approve-tx' });
+      setCurrentStep('approving');
+      toast.loading('Approving token...', { id: 'approve-tx' });
 
       writeContract(
         {
@@ -195,7 +200,7 @@ export default function MarginTradePage() {
         },
         {
           onSuccess: hash => {
-            console.log('Wallet approval transaction hash:', hash);
+            console.log('Token approval transaction hash:', hash);
             setTxHash(hash);
             toast.dismiss('approve-tx');
             toast.loading('Approval transaction submitted...', {
@@ -203,24 +208,27 @@ export default function MarginTradePage() {
             });
           },
           onError: error => {
-            console.error('Wallet approval error:', error);
+            console.error('Token approval error:', error);
+            setCurrentStep('ready');
             toast.dismiss('approve-tx');
             toast.error('Failed to approve token');
           },
         },
       );
     } catch (error) {
-      console.error('Wallet approval error:', error);
+      console.error('Token approval error:', error);
+      setCurrentStep('ready');
       toast.dismiss('approve-tx');
       toast.error('Failed to approve token');
     }
   };
 
-  // Open position with fixed leverage conversion
-  const handleOpenPosition = async () => {
+  // Create position after approval (internal function)
+  const handleCreatePosition = useCallback(async () => {
     if (!collateralAmount || !pool || !userAddress) return;
 
     try {
+      setCurrentStep('creating');
       const collateralAmountBigInt = parseUnits(collateralAmount, pool?.collateralTokenDecimals || 18);
 
       // Convert leverage from decimal (e.g., 1.5) to basis points (e.g., 150)
@@ -258,6 +266,7 @@ export default function MarginTradePage() {
           },
           onError: error => {
             console.error('Position creation Error:', error);
+            setCurrentStep('ready');
             toast.dismiss('create-position');
             toast.error('Failed to create position: ' + error.message);
           },
@@ -265,8 +274,24 @@ export default function MarginTradePage() {
       );
     } catch (error) {
       console.error('Error creating position:', error);
+      setCurrentStep('ready');
       toast.dismiss('create-position');
       toast.error('Failed to create position');
+    }
+  }, [collateralAmount, pool, userAddress, leverage, poolAddress, writeContract]);
+
+  // Unified action: Handle both approval and position creation
+  const handleCreatePositionAction = async () => {
+    if (!collateralAmount || !pool || !userAddress) return;
+    
+    // Check if approval is needed first
+    if (needsApproval) {
+      // Start with token approval
+      await handleApproveToken();
+      // Position creation will be triggered automatically after approval
+    } else {
+      // Directly create position
+      await handleCreatePosition();
     }
   };
 
@@ -416,31 +441,64 @@ export default function MarginTradePage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          {needsApproval ? (
-            <Button
-              className='w-full'
-              size='lg'
-              onClick={handleApproveWallet}
-              disabled={!pool || isWritePending || isConfirming}
-            >
-              {isWritePending || isConfirming ? 'Approving...' : `Approve ${pool.collateralTokenSymbol}`}
-            </Button>
-          ) : (
-            <Button
-              className='w-full'
-              size='lg'
-              onClick={handleOpenPosition}
-              disabled={
-                !collateralAmount ||
-                isExceedingBalance() ||
-                isWritePending ||
-                isConfirming ||
-                Number(collateralAmount) <= 0
+          {/* Unified Action Button */}
+          <Button
+            className='w-full'
+            size='lg'
+            onClick={handleCreatePositionAction}
+            disabled={
+              !collateralAmount ||
+              isExceedingBalance() ||
+              isWritePending ||
+              isConfirming ||
+              Number(collateralAmount) <= 0 ||
+              currentStep === 'approving' ||
+              currentStep === 'creating' ||
+              currentStep === 'success'
+            }
+          >
+            {(() => {
+              if (currentStep === 'approving') {
+                return 'Approving Token...';
               }
-            >
-              {isWritePending || isConfirming ? 'Creating Position...' : 'Create Position'}
-            </Button>
+              if (currentStep === 'creating') {
+                return 'Creating Position...';
+              }
+              if (currentStep === 'success') {
+                return 'Position Created ✓';
+              }
+              if (isWritePending || isConfirming) {
+                return needsApproval ? 'Processing...' : 'Processing...';
+              }
+              if (needsApproval) {
+                return `Approve ${pool.collateralTokenSymbol} & Create Position`;
+              }
+              return 'Create Position';
+            })()}
+          </Button>
+          
+          {/* Progress indicator for multi-step flow */}
+          {(needsApproval && currentStep !== 'ready') && (
+            <div className='text-center text-sm text-muted-foreground'>
+              {currentStep === 'approving' && (
+                <div className='flex items-center justify-center gap-2'>
+                  <div className='w-2 h-2 bg-primary rounded-full animate-pulse'></div>
+                  Step 1 of 2: Approving token permission
+                </div>
+              )}
+              {currentStep === 'creating' && (
+                <div className='flex items-center justify-center gap-2'>
+                  <div className='w-2 h-2 bg-primary rounded-full animate-pulse'></div>
+                  Step 2 of 2: Creating margin position
+                </div>
+              )}
+              {currentStep === 'success' && (
+                <div className='flex items-center justify-center gap-2 text-green-600'>
+                  <div className='w-2 h-2 bg-green-500 rounded-full'></div>
+                  Complete! Redirecting to position...
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

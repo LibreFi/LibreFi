@@ -1,9 +1,7 @@
 'use client';
 
-import { useReadContracts } from 'wagmi';
-import { Address, erc20Abi } from 'viem';
-import { CONTRACTS } from '@/config/contracts';
-import { useQueryClient } from '@tanstack/react-query';
+import { Address } from 'viem';
+import { TOKENS_INFO } from '@/lib/constants/addresses';
 
 type TokenMetadata = {
   address: Address;
@@ -12,74 +10,39 @@ type TokenMetadata = {
   decimals: number;
 };
 
+// Basic token metadata for Base Sepolia testnet
+// TODO: Replace with dynamic loading from actual token contracts
+const BASIC_TOKEN_METADATA: Record<string, TokenMetadata> = {
+  'ETH': {
+    address: '0x0000000000000000000000000000000000000000' as Address,
+    name: 'Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  // Load from constants
+  ...Object.fromEntries(
+    Object.values(TOKENS_INFO).map(token => [
+      token.symbol,
+      {
+        address: token.address,
+        name: token.name,
+        symbol: token.symbol,
+        decimals: token.decimals,
+      }
+    ])
+  ),
+};
+
 export function useTokenMetadata() {
-  const queryClient = useQueryClient();
-
-  // Flatten all contract calls into a single array
-  const { data, isLoading, isError, error } = useReadContracts({
-    contracts: CONTRACTS.TOKEN_ADDRESSES.flatMap(address => [
-      {
-        address,
-        abi: erc20Abi,
-        functionName: 'name',
-      },
-      {
-        address,
-        abi: erc20Abi,
-        functionName: 'symbol',
-      },
-      {
-        address,
-        abi: erc20Abi,
-        functionName: 'decimals',
-      },
-    ]),
-    query: {
-      staleTime: 3600_000, // 1 hour
-      gcTime: 24 * 3600_000, // 1 day
-      // Memoized data transformation
-      select: rawData => {
-        return CONTRACTS.TOKEN_ADDRESSES.reduce(
-          (acc, address, index) => {
-            const startIdx = index * 3;
-            const [nameResult, symbolResult, decimalsResult] = rawData.slice(startIdx, startIdx + 3);
-            const symbol = symbolResult?.status === 'success' ? (symbolResult.result as string) : 'UNKNOWN';
-
-            acc[symbol] = {
-              name: nameResult?.status === 'success' ? (nameResult.result as string) : 'Unknown Token',
-              symbol,
-              address,
-              decimals: decimalsResult?.status === 'success' ? (decimalsResult.result as number) : 18,
-            };
-            return acc;
-          },
-          {} as Record<string, TokenMetadata>,
-        );
-      },
-    },
-  });
-
-  // Cache management utilities
-  const refreshCache = () => {
-    queryClient.invalidateQueries({
-      queryKey: ['readContracts', CONTRACTS.TOKEN_ADDRESSES],
-    });
-  };
-
-  const getCacheState = () => ({
-    updatedAt: queryClient.getQueryState(['readContracts', CONTRACTS.TOKEN_ADDRESSES])?.dataUpdatedAt,
-    isStale:
-      queryClient.isFetching({
-        queryKey: ['readContracts', CONTRACTS.TOKEN_ADDRESSES],
-      }) !== undefined,
-  });
-
+  // Return static data for now - this can be enhanced later
+  // to fetch actual token metadata from contracts
+  
   return {
-    data: data ?? {},
-    isLoading,
-    isError,
-    error,
-    refreshCache,
-    getCacheState,
+    data: BASIC_TOKEN_METADATA,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refreshCache: () => {}, // No-op for now
+    getCacheState: () => ({ updatedAt: Date.now(), isStale: false }),
   };
 }

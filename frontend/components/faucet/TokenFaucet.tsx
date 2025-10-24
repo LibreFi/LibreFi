@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Address, parseUnits } from 'viem';
+import { Address, parseUnits, formatUnits } from 'viem';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { Button } from '@/components/shared/Button';
 import { toast } from 'sonner';
 import { ChevronDown, Droplets, Copy, CheckCircle2 } from 'lucide-react';
+import { ALL_TOKENS } from '@/lib/constants/addresses';
 
 const tokenFaucetABI = [
   {
@@ -48,29 +49,11 @@ const tokenFaucetABI = [
   },
 ];
 
-// Token addresses on Educhain testnet
-const TOKEN_LIST = [
-  {
-    address: '0x74B59C6C38AEA54644527aA0c5f8f4796e777533' as Address,
-    label: 'laUSDC',
-  },
-  {
-    address: '0x5e4695a76Dc81ECc041576d672Da1208d6d8922B' as Address,
-    label: 'laUSDT',
-  },
-  {
-    address: '0xe4e0BB3C56e735c72D6696B4F56B7251BB4ab35b' as Address,
-    label: 'laDAI',
-  },
-  {
-    address: '0x919c586538EE34B87A12c584ba6463e7e12338E9' as Address,
-    label: 'laWBTC',
-  },
-  {
-    address: '0xe7d9E1dB89Ce03570CBA7f4C6Af80EC14a61d1db' as Address,
-    label: 'laWETH',
-  },
-];
+// Token list from constants
+const TOKEN_LIST = ALL_TOKENS.map(token => ({
+  address: token.address,
+  label: token.symbol,
+}));
 
 interface TokenInfo {
   address: Address;
@@ -111,24 +94,24 @@ export function TokenFaucet() {
       decimals: 18,
       balance: 0n,
       isLoading: true,
-    })),
+    }))
   );
 
   // Effect to fetch token data on component mount
   useEffect(() => {
-    if (!isClient || !isConnected) return;
+    if (!isClient || !isConnected || !address) return;
 
     // Fetch data for each token
     const fetchTokenData = async () => {
-      const updatedTokens = [...tokensData];
+      console.log('Fetching token data for address:', address);
 
       for (let i = 0; i < TOKEN_LIST.length; i++) {
         const token = TOKEN_LIST[i];
         try {
           // Create a fetch request function that works with your environment
           const fetchData = async (functionName: string) => {
-            // Use a basic fetch to your RPC endpoint
-            const response = await fetch('https://rpc.open-campus-codex.gelato.digital/', {
+            // Use Base Sepolia RPC endpoint
+            const response = await fetch('https://sepolia.base.org', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -144,7 +127,7 @@ export function TokenFaucet() {
                         : functionName === 'decimals'
                           ? '0x313ce567'
                           : functionName === 'balanceOf'
-                            ? `0x70a08231000000000000000000000000${address?.slice(2)}`
+                            ? `0x70a08231000000000000000000000000${address.slice(2)}`
                             : '0x',
                   },
                   'latest',
@@ -153,7 +136,10 @@ export function TokenFaucet() {
             });
 
             const result = await response.json();
-            if (result.error) throw new Error(result.error.message);
+            if (result.error) {
+              console.error('RPC Error:', result.error);
+              throw new Error(result.error.message);
+            }
 
             if (functionName === 'symbol') {
               // Decode symbol (string)
@@ -165,7 +151,9 @@ export function TokenFaucet() {
               return parseInt(result.result, 16) || 18;
             } else if (functionName === 'balanceOf') {
               // Decode balance (uint256)
-              return BigInt(result.result || '0x0');
+              const balance = BigInt(result.result || '0x0');
+              console.log(`Balance for ${token.label}:`, balance.toString());
+              return balance;
             }
 
             return null;
@@ -175,41 +163,64 @@ export function TokenFaucet() {
           const [symbol, decimals, balance] = await Promise.all([
             fetchData('symbol'),
             fetchData('decimals'),
-            isConnected && address ? fetchData('balanceOf') : 0n,
+            fetchData('balanceOf'),
           ]);
 
           // Update token data
-          updatedTokens[i] = {
-            ...updatedTokens[i],
-            symbol: (symbol as string) || token.label,
-            decimals: (decimals as number) || 18,
-            balance: (balance as bigint) || 0n,
-            isLoading: false,
-          };
+          setTokensData(prev => {
+            const updated = [...prev];
+            updated[i] = {
+              ...updated[i],
+              symbol: (symbol as string) || token.label,
+              decimals: (decimals as number) || 18,
+              balance: (balance as bigint) || 0n,
+              isLoading: false,
+            };
+            return updated;
+          });
+
         } catch (error) {
           console.error(`Error fetching data for token ${token.label}:`, error);
           // Keep default values but mark as not loading
-          updatedTokens[i] = {
-            ...updatedTokens[i],
-            isLoading: false,
-          };
+          setTokensData(prev => {
+            const updated = [...prev];
+            updated[i] = {
+              ...updated[i],
+              isLoading: false,
+            };
+            return updated;
+          });
         }
       }
-
-      setTokensData(updatedTokens);
     };
 
     fetchTokenData();
-  }, [isClient, isConnected, address, tokensData]);
+  }, [isClient, isConnected, address]);
 
-  // Format token amount with appropriate decimals
+  // Format token amount with appropriate decimals using proper BigInt handling
   const formatBalance = (token: TokenInfo | null) => {
-    if (!token) return '0';
+    if (!token || token.balance === 0n) return '0';
 
-    return (Number(token.balance) / 10 ** token.decimals).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 4,
-    });
+    try {
+      // Use viem's formatUnits for proper BigInt to decimal conversion
+      const formatted = formatUnits(token.balance, token.decimals);
+      const num = parseFloat(formatted);
+      
+      console.log(`Formatting balance for ${token.symbol}:`, {
+        rawBalance: token.balance.toString(),
+        decimals: token.decimals,
+        formatted,
+        finalNumber: num
+      });
+      
+      return num.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 4,
+      });
+    } catch (error) {
+      console.error('Error formatting balance:', error);
+      return '0';
+    }
   };
 
   // Copy token address to clipboard
@@ -261,7 +272,14 @@ export function TokenFaucet() {
       return;
     }
 
-    const selectedToken = tokensData[selectedTokenIdx];
+    const selectedToken = tokensData[selectedTokenIdx] || {
+      address: TOKEN_LIST[0]?.address || ('0x' as Address),
+      symbol: TOKEN_LIST[0]?.label || 'Loading...',
+      name: TOKEN_LIST[0]?.label || 'Loading...',
+      decimals: 18,
+      balance: 0n,
+      isLoading: true,
+    };
 
     try {
       setIsPending(true);
@@ -321,7 +339,7 @@ export function TokenFaucet() {
       // Refresh token data
       const refreshTokenData = async () => {
         try {
-          const response = await fetch('https://rpc.open-campus-codex.gelato.digital/', {
+          const response = await fetch('https://sepolia.base.org', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -342,6 +360,7 @@ export function TokenFaucet() {
           if (result.error) throw new Error(result.error.message);
 
           const newBalance = BigInt(result.result || '0x0');
+          console.log('Refreshed balance:', newBalance.toString());
 
           setTokensData(prev => {
             const updated = [...prev];
@@ -378,14 +397,21 @@ export function TokenFaucet() {
     );
   }
 
-  const selectedToken = tokensData[selectedTokenIdx];
+  const selectedToken = tokensData[selectedTokenIdx] || {
+    address: TOKEN_LIST[0]?.address || ('0x' as Address),
+    symbol: TOKEN_LIST[0]?.label || 'Loading...',
+    name: TOKEN_LIST[0]?.label || 'Loading...',
+    decimals: 18,
+    balance: 0n,
+    isLoading: true,
+  };
 
   return (
     <div className='bg-card rounded-lg border p-6 shadow-sm'>
-      <h2 className='text-2xl font-bold mb-6'>Educhain Token Faucet</h2>
+      <h2 className='text-2xl font-bold mb-6'>Base Sepolia Token Faucet</h2>
 
       <p className='text-muted-foreground mb-6'>
-        Select a token and amount to mint test tokens for the Levera platform.
+        Select a token and amount to mint test tokens for the LibreFi platform.
       </p>
 
       <div className='space-y-6'>
@@ -404,7 +430,7 @@ export function TokenFaucet() {
 
             {isDropdownOpen && (
               <div className='absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg'>
-                {tokensData.map((token, index) => (
+                {tokensData.length > 0 && tokensData.map((token, index) => (
                   <button
                     key={token.address}
                     className='w-full px-4 py-2 text-left hover:bg-muted flex justify-between items-center'
@@ -490,7 +516,7 @@ export function TokenFaucet() {
 
       <div className='mt-6 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg'>
         <p className='text-sm text-blue-700 dark:text-blue-300'>
-          Note: These tokens are for testing purposes only on the Educhain testnet. To add a token to your wallet, copy
+          Note: These tokens are for testing purposes only on the Base Sepolia testnet. To add a token to your wallet, copy
           the token address and import it as a custom token.
         </p>
       </div>

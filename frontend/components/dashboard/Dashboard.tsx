@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/shared/Button';
 import { ArrowRight, TrendingUp, Coins, LineChart, BarChart3 } from 'lucide-react';
 import { useLendingPoolFactory } from '@/hooks/useLendingPoolFactory';
 import { usePositionFactory } from '@/hooks/usePositionFactory';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useAccount } from 'wagmi';
 
 export function Dashboard() {
@@ -14,6 +15,11 @@ export function Dashboard() {
   const { pools, isLoading: isLoadingPools, poolAddresses } = useLendingPoolFactory();
   const { userPositions, isLoading: isLoadingPositions } = usePositionFactory();
   const { isConnected } = useAccount();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Calculate some statistics to show on dashboard
   const totalPools = pools.length;
@@ -26,35 +32,39 @@ export function Dashboard() {
       label: 'Total Lending Pools',
       value: isLoadingPools ? '...' : totalPools,
       change: '+5 this week',
-      icon: <Coins className='size-5 text-yellow-500' />,
-      color: 'bg-yellow-50 dark:bg-yellow-950/30',
+      icon: <Coins className='size-5 text-primary' />,
+      color: 'bg-primary/10 dark:bg-primary/20',
       onClick: () => router.push('/pools'),
     },
     {
       label: 'Active Pools',
       value: isLoadingPools ? '...' : activePools,
       change: '92% of total',
-      icon: <BarChart3 className='size-5 text-blue-500' />,
-      color: 'bg-blue-50 dark:bg-blue-950/30',
+      icon: <BarChart3 className='size-5 text-primary' />,
+      color: 'bg-primary/10 dark:bg-primary/20',
       onClick: () => router.push('/pools'),
     },
     {
       label: 'Your Open Positions',
       value: isLoadingPositions ? '...' : userPositionsCount,
-      change: isConnected ? 'Manage positions' : 'Connect wallet to view',
-      icon: <TrendingUp className='size-5 text-green-500' />,
-      color: 'bg-green-50 dark:bg-green-950/30',
+      change: isMounted && isConnected ? 'Manage positions' : 'Connect wallet to view',
+      icon: <TrendingUp className='size-5 text-primary' />,
+      color: 'bg-primary/10 dark:bg-primary/20',
       onClick: () => router.push('/margin'),
     },
     {
       label: 'Avg. Interest Rate',
       value: '8.2%',
       change: '-0.5% from last week',
-      icon: <LineChart className='size-5 text-purple-500' />,
-      color: 'bg-purple-50 dark:bg-purple-950/30',
+      icon: <LineChart className='size-5 text-primary' />,
+      color: 'bg-primary/10 dark:bg-primary/20',
       onClick: () => router.push('/pools'),
     },
   ];
+
+  if (!isMounted) {
+    return <LoadingSkeleton variant='card' count={4} />;
+  }
 
   return (
     <div className='space-y-8'>
@@ -63,7 +73,7 @@ export function Dashboard() {
         {stats.map((stat, i) => (
           <div
             key={i}
-            className={`${stat.color} border rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow`}
+            className={`${stat.color} border rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow neon-hover neon-border`}
             onClick={stat.onClick}
           >
             <div className='flex justify-between items-start'>
@@ -79,73 +89,89 @@ export function Dashboard() {
       </div>
 
       {/* Featured Pools Section */}
-      <div>
-        <div className='flex justify-between items-center mb-4'>
-          <h2 className='text-xl font-semibold'>Featured Lending Pools</h2>
-          <Button variant='ghost' className='text-sm gap-1' onClick={() => router.push('/pools')}>
-            View All Pools <ArrowRight className='size-3.5' />
-          </Button>
-        </div>
-
-        {isLoadingPools ? (
-          <LoadingSkeleton variant='card' count={3} />
-        ) : pools.length > 0 ? (
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-            {pools.slice(0, 3).map((pool, index) => (
-              <div
-                key={index}
-                className='bg-card rounded-lg border p-6 space-y-4 cursor-pointer hover:shadow-md transition-shadow'
-                onClick={() => router.push(`/pools/${poolAddresses[index]}`)}
-              >
-                <div className='flex justify-between items-center'>
-                  <h3 className='font-semibold'>
-                    {pool.loanTokenSymbol}/{pool.collateralTokenSymbol}
-                  </h3>
-                  <span
-                    className={`px-2 py-0.5 text-xs rounded-full ${
-                      pool.positionType === 0
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400'
-                        : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
-                    }`}
-                  >
-                    {pool.positionType === 0 ? 'LONG' : 'SHORT'}
-                  </span>
-                </div>
-
-                <div className='grid grid-cols-2 gap-4'>
-                  <div>
-                    <p className='text-xs text-muted-foreground'>Interest Rate</p>
-                    <p className='font-medium'>{Number(pool.interestRate).toFixed(2)}%</p>
-                  </div>
-                  <div>
-                    <p className='text-xs text-muted-foreground'>Liquidation Threshold</p>
-                    <p className='font-medium'>{Number(pool.liquidationThresholdPercentage).toFixed(0)}%</p>
-                  </div>
-                </div>
-
-                <Button
-                  variant='default'
-                  size='sm'
-                  className='w-full'
-                  onClick={e => {
-                    e.stopPropagation();
-                    router.push(`/margin/${poolAddresses[index]}/trade`);
-                  }}
-                >
-                  <TrendingUp className='size-3.5 mr-1' /> Trade Now
-                </Button>
-              </div>
-            ))}
+      <ErrorBoundary
+        fallback={
+          <div className='bg-destructive/10 border-destructive/20 border rounded-lg p-6'>
+            <p className='text-sm text-destructive text-center'>Failed to load featured pools</p>
           </div>
-        ) : (
-          <div className='text-center py-12 border rounded-lg bg-card'>
-            <p className='text-muted-foreground'>No lending pools available yet.</p>
-            <Button variant='link' onClick={() => router.push('/pools/create')}>
-              Create first pool
+        }
+      >
+        <div>
+          <div className='flex justify-between items-center mb-4'>
+            <h2 className='text-xl font-semibold'>Featured Lending Pools</h2>
+            <Button variant='ghost' className='text-sm gap-1' onClick={() => router.push('/pools')}>
+              View All Pools <ArrowRight className='size-3.5' />
             </Button>
           </div>
-        )}
-      </div>
+
+          {isLoadingPools ? (
+            <LoadingSkeleton variant='card' count={3} />
+          ) : pools.length > 0 ? (
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+              {pools.slice(0, 3).map((pool, index) => (
+                <ErrorBoundary
+                  key={index}
+                  fallback={
+                    <div className='bg-card rounded-lg border p-6 text-center'>
+                      <p className='text-sm text-muted-foreground'>Pool data unavailable</p>
+                    </div>
+                  }
+                >
+                  <div
+                    className='bg-card rounded-lg border p-6 space-y-4 cursor-pointer hover:shadow-md transition-shadow'
+                    onClick={() => router.push(`/pools/${poolAddresses[index]}`)}
+                  >
+                    <div className='flex justify-between items-center'>
+                      <h3 className='font-semibold'>
+                        {pool.loanTokenSymbol}/{pool.collateralTokenSymbol}
+                      </h3>
+                      <span
+                        className={`px-2 py-0.5 text-xs rounded-full ${
+                          pool.positionType === 0
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
+                        }`}
+                      >
+                        {pool.positionType === 0 ? 'LONG' : 'SHORT'}
+                      </span>
+                    </div>
+
+                    <div className='grid grid-cols-2 gap-4'>
+                      <div>
+                        <p className='text-xs text-muted-foreground'>Interest Rate</p>
+                        <p className='font-medium'>{Number(pool.interestRate).toFixed(2)}%</p>
+                      </div>
+                      <div>
+                        <p className='text-xs text-muted-foreground'>Liquidation Threshold</p>
+                        <p className='font-medium'>{Number(pool.liquidationThresholdPercentage).toFixed(0)}%</p>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant='default'
+                      size='sm'
+                      className='w-full'
+                      onClick={e => {
+                        e.stopPropagation();
+                        router.push(`/margin/${poolAddresses[index]}/trade`);
+                      }}
+                    >
+                      <TrendingUp className='size-3.5 mr-1' /> Trade Now
+                    </Button>
+                  </div>
+                </ErrorBoundary>
+              ))}
+            </div>
+          ) : (
+            <div className='text-center py-12 border rounded-lg bg-card'>
+              <p className='text-muted-foreground'>No lending pools available yet.</p>
+              <Button variant='link' onClick={() => router.push('/pools/create')}>
+                Create first pool
+              </Button>
+            </div>
+          )}
+        </div>
+      </ErrorBoundary>
 
       {/* Quick Actions Section */}
       <div className='bg-card rounded-lg border p-6'>

@@ -1,26 +1,22 @@
-import { arbitrumSepolia, eduChainTestnet } from '@/lib/chains';
+import { baseSepolia } from '@/lib/chains';
 import { createConfig, http } from 'wagmi';
 import { injected, walletConnect } from 'wagmi/connectors';
-
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-
-if (!projectId) throw new Error('WalletConnect project ID is not defined');
+import { env } from '@/lib/env';
 
 export const config = createConfig({
-  chains: [eduChainTestnet, arbitrumSepolia],
+  chains: [baseSepolia],
   transports: {
-    [eduChainTestnet.id]: http(eduChainTestnet.rpcUrls.default.http[0]),
-    [arbitrumSepolia.id]: http(arbitrumSepolia.rpcUrls.default.http[0]),
+    [baseSepolia.id]: http(),
   },
   connectors: [
     injected(),
     walletConnect({
-      projectId,
+      projectId: env.WALLETCONNECT_PROJECT_ID,
       metadata: {
         name: 'LibreFi',
         description: 'Permissionless margin trading platform',
-        url: 'https://levera.netlify.app/',
-        icons: ['/assets/levera-temp-logo.png'],
+        url: 'https://librefi.app',
+        icons: ['/librefi-logo.png'],
       },
     }),
   ],

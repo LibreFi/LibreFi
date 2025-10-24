@@ -1,16 +1,14 @@
 import { formatUnits, Address, erc20Abi, createPublicClient, http } from 'viem';
 import { LRUCache as LRU } from 'lru-cache';
-import { eduChainTestnet, arbitrumSepolia } from '@/lib/chains';
+import { baseSepolia } from '@/lib/chains';
 
 // Helper to get chain configuration
 const getChainConfig = (chainId: number) => {
   switch (chainId) {
-    case eduChainTestnet.id:
-      return eduChainTestnet;
-    case arbitrumSepolia.id:
-      return arbitrumSepolia;
+    case baseSepolia.id:
+      return baseSepolia;
     default:
-      throw new Error('Unsupported chain');
+      throw new Error('Unsupported chain - only Base Sepolia is supported');
   }
 };
 
@@ -140,6 +138,6 @@ export function formatTokenAmount(
 
 // Example usage:
 // formatTokenAmount(1234567890000000000n, {
-//   chainId: eduChainTestnet.id,
+//   chainId: baseSepolia.id,
 //   tokenAddress: '0x...'
 // });

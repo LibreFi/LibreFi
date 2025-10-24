@@ -2,7 +2,7 @@
 
 LibreFi is a cutting-edge noncustodial leveraged trading platform built on **Base**, Coinbase's Layer 2 scaling solution. Leveraging Base's low fees, fast transactions, and Ethereum security, LibreFi introduces an efficient and flexible trustless mechanism that revolutionizes margin trading. The protocol enables permissionless risk management, unrestricted market creation, and oracle-agnostic pricing. Users benefit from enhanced leverage options, optimized interest rates, and dramatically reduced gas fees thanks to Base's infrastructure. Built as a simple, immutable, and governance-minimized base layer, it serves as a robust foundation for the next generation of DeFi applications on Base.
 
-### 🚀 Key Features
+## 🚀 Key Features
 
 - **Permissionless listing of any coins (including meme coins)**: List and trade without approvals on Base's fast, low-cost network
 - **Permissionless pool creation**: Create lending pools with your own parameters anytime, leveraging Base's efficient infrastructure
@@ -13,11 +13,12 @@ LibreFi is a cutting-edge noncustodial leveraged trading platform built on **Bas
 
 ## 🌐 Live Demo
 
-Experience LibreFi in action with our [frontend demo]() deployed on Base Sepolia testnet.
+Experience LibreFi in action with our [frontend demo](localhost:3000) deployed on Base Sepolia testnet.
 
 ## 📊 Base Sepolia Deployment
 
 **Contract Addresses on Base Sepolia:**
+
 - **MockUniswapRouter**: `0x4d6aa2ccee914096689bba75b7bf73899484bcf7`
 - **Vault**: `0x30d0ae6ec1a3ff9361bb2f27e69d5092e5b109f2`
 - **MockFactory**: `0x687d9a0df2f0d2aed2b575438b13ec33bd45fce4`
@@ -32,10 +33,12 @@ Experience LibreFi in action with our [frontend demo]() deployed on Base Sepolia
 LibreFi consists of multiple repositories, each handling a distinct part of the ecosystem:
 
 ### 📁 Repository Structure
+
 - **`/contracts/`** - Smart contracts and deployment scripts (this repository)
 - **`/frontend/`** - Web interface and user experience
 
 ### 🔧 Smart Contract Documentation
+
 For detailed technical documentation about the smart contracts, see the [contracts README](./contracts/README.md):
 
 - **[How It Works](./contracts/HowItWorks.md)** - Core protocol mechanics
@@ -66,6 +69,7 @@ For detailed technical documentation about the smart contracts, see the [contrac
 ## 🎯 Hackathon Impact
 
 This project demonstrates:
+
 - **Innovation**: Novel approach to permissionless margin trading
 - **Technical Excellence**: Clean, well-documented, and optimized smart contracts
 - **Real-World Application**: Practical solution for DeFi trading needs
@@ -82,16 +86,19 @@ This project demonstrates:
 ## 📖 Documentation Structure
 
 ### For Users & Judges
+
 - **This README** - Project overview, features, and deployment info
 - **Contract Addresses** - Live deployment details on Base Sepolia
 - **Quick Start** - How to interact with the protocol
 
 ### For Developers
+
 - **[Contracts README](./contracts/README.md)** - Technical setup and development
 - **[How It Works](./contracts/HowItWorks.md)** - Detailed protocol mechanics
 - **Individual Contract Docs** - Specific implementation details
 
 ### For Hackathon Evaluation
+
 - **Innovation** - Novel permissionless margin trading approach
 - **Technical Excellence** - Clean, optimized, and well-documented code
 - **Base Integration** - Leverages Base's unique advantages

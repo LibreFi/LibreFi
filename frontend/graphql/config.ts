@@ -1,4 +1,4 @@
-export const SUBGRAPH_URL = 'https://api.studio.thegraph.com/query/102995/levera-subgraph/version/latest';
+export const SUBGRAPH_URL = 'https://api.studio.thegraph.com/query/102995/librefi-subgraph/version/latest';
 
 export const QUERIES = {
   GET_POSITIONS: `{

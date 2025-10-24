@@ -10,6 +10,7 @@ import { Search, RefreshCw, Filter, ChevronDown, AlertTriangle, Plus } from 'luc
 import { MarginCard } from '@/components/margin/MarginCard';
 import { MarginPoolCard } from '@/components/margin/MarginPoolCard';
 import { useAccount } from 'wagmi';
+import { WalletProtectedPage } from '@/components/shared/WalletProtectedPage';
 
 // Type definitions to handle potential missing properties
 interface SafePosition {
@@ -135,9 +136,13 @@ export default function MarginPoolsPage() {
   const error = poolsError;
 
   return (
-    <main className='flex-1'>
-      <div className='container mx-auto px-4 lg:px-8 py-8'>
-        <div className='flex flex-col gap-6'>
+    <WalletProtectedPage 
+      title="Connect Wallet for Margin Trading"
+      description="Connect your wallet to access margin trading with leverage. Trade any asset with borrowed funds."
+    >
+      <main className='flex-1'>
+        <div className='container mx-auto px-4 lg:px-8 py-8'>
+          <div className='flex flex-col gap-6'>
           {/* Header with Title */}
           <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
             <div>
@@ -390,8 +395,9 @@ export default function MarginPoolsPage() {
               )}
             </div>
           )}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </WalletProtectedPage>
   );
 }

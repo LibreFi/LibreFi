@@ -1,7 +1,7 @@
 import { request } from 'graphql-request';
 
 const GRAPHQL_URL =
-  process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://thegraph.com/studio/subgraph/levera-subgraph/endpoints';
+  process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://thegraph.com/studio/subgraph/librefi-subgraph/endpoints';
 
 interface QueryVariables {
   [key: string]: unknown;

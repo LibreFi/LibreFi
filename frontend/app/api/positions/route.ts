@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Address, createPublicClient, http } from 'viem';
-import { eduChainTestnet, arbitrumSepolia } from '@/lib/chains';
+import { baseSepolia } from '@/lib/chains';
 import { positionFactoryABI } from '@/lib/abis/positionFactory';
 import { CONTRACTS } from '@/config/contracts';
 import { LRUCache as LRU } from 'lru-cache';
@@ -23,12 +23,10 @@ const requestQueue = new Map<string, Promise<NextResponse<CachedRateLimit[]>>>()
 // Helper to get chain configuration
 const getChainConfig = (chainId: number) => {
   switch (chainId) {
-    case eduChainTestnet.id:
-      return eduChainTestnet;
-    case arbitrumSepolia.id:
-      return arbitrumSepolia;
+    case baseSepolia.id:
+      return baseSepolia;
     default:
-      throw new Error('Unsupported chain');
+      throw new Error('Unsupported chain - only Base Sepolia is supported');
   }
 };
 

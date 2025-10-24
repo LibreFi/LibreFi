@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http } from 'viem';
 
-// Initialize Viem client for Educhain
+// Initialize Viem client for Base Sepolia
 const client = createPublicClient({
-  transport: http('https://rpc.open-campus-codex.gelato.digital/'),
+  transport: http('https://sepolia.base.org'),
 });
 
 export async function POST(request: NextRequest) {

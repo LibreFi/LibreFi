@@ -9,6 +9,7 @@ import { Plus, Search, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Address } from 'viem';
 import { useAccount } from 'wagmi';
+import { WalletProtectedPage } from '@/components/shared/WalletProtectedPage';
 
 export default function PoolsPage() {
   const router = useRouter();
@@ -64,9 +65,13 @@ export default function PoolsPage() {
   });
 
   return (
-    <main className='flex-1'>
-      <div className='container mx-auto px-4 lg:px-8 py-8'>
-        <div className='flex flex-col gap-6'>
+    <WalletProtectedPage 
+      title="Connect Wallet for Lending Pools"
+      description="Connect your wallet to supply assets and earn interest or create new lending pools."
+    >
+      <main className='flex-1'>
+        <div className='container mx-auto px-4 lg:px-8 py-8'>
+          <div className='flex flex-col gap-6'>
           {/* Header with Create Pool Button */}
           <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
             <div>
@@ -212,8 +217,9 @@ export default function PoolsPage() {
               )}
             </div>
           )}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </WalletProtectedPage>
   );
 }
